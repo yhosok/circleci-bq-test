@@ -1,0 +1,44 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/php:7.3-node-browsers
+    working_directory: ~/laravel-bq-test
+    steps:
+      - checkout
+      - run:
+          name: Update apt-get
+          command: sudo apt-get update
+      - run:
+          name: Docker php extensions install
+          command: sudo docker-php-ext-install pdo_mysql
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "composer.json" }}
+            - v1-dependencies-
+      - run:
+          name: Install PHP libraries
+          command: composer install -n --prefer-dist
+      - save_cache:
+          paths:
+            - ./vendor
+          key: v1-dependencies-{{ checksum "composer.json" }}
+      - run:
+          name: put gcloud key file
+          command: mkdir -p storage/gcloud 2>/dev/null && echo $GCLOUD_SERVICE_KEY > storage/gcloud/project-yhosok.json
+
+      - run:
+          name: Run PHPUnit
+          command: vendor/bin/phpunit
+
+#version: 2
+#jobs:
+#  build:
+#    docker:
+#      - image: google/cloud-sdk
+#    steps:
+#      - run: |
+#          echo $GCLOUD_SERVICE_KEY | gcloud auth activate-service-account --key-file=-
+#          gcloud --quiet config set project ${GOOGLE_PROJECT_ID}
+#          gcloud --quiet config set compute/zone ${GOOGLE_COMPUTE_ZONE}
+
